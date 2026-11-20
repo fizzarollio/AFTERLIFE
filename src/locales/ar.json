@@ -76,5 +76,33 @@
     "ja": "日本語",
     "ko": "한국어",
     "ar": "العربية"
+  },
+  "missions": {
+    "eyebrow": "PROGRESSION / QUEST LOG",
+    "intro": "Small steps move your story forward. Rewards are virtual and have no cash value.",
+    "refresh": "Refresh",
+    "level": "LEVEL",
+    "completed": "COMPLETED",
+    "completedCaption": "Missions finished",
+    "fragments": "FRAGMENTS",
+    "virtualOnly": "Virtual balance only",
+    "available": "AVAILABLE MISSIONS",
+    "yourPath": "Your path",
+    "loading": "Loading missions…",
+    "empty": "No active missions yet. Check back soon.",
+    "fragmentsShort": "fragments",
+    "completedStatus": "Completed",
+    "start": "Start mission",
+    "complete": "Claim reward",
+    "processing": "Please wait…",
+    "started": "Mission started. You can complete it when you're ready.",
+    "alreadyStarted": "You have already started this mission.",
+    "rewardReceived": "Mission complete — {reward} fragments and XP earned!",
+    "rewardSecurity": "Rewards are granted by the database only once per mission. Fragments are virtual and cannot be purchased or exchanged for money.",
+    "signIn": "Sign in to view missions and save your progress.",
+    "goSignIn": "Go to sign in",
+    "loadFailed": "Could not load missions. Please refresh.",
+    "totalExperience": "Your earned experience",
+    "levelProgress": "Keep completing missions to reach the next level."
   }
 }
