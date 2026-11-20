@@ -132,5 +132,23 @@
     "edit": "Edit entry",
     "delete": "Delete entry",
     "privacyNote": "Entries are visible only to their owner through database access policies."
+  },
+  "profile": {
+    "preview": "PROFILE PREVIEW",
+    "defaultName": "New soul",
+    "displayName": "Display name",
+    "username": "Username",
+    "usernameHint": "3–24 characters: lowercase letters, numbers, and underscores.",
+    "bio": "About",
+    "bioPlaceholder": "A few words about yourself…",
+    "save": "Save profile",
+    "saving": "Saving…",
+    "saved": "Profile updated.",
+    "usernameInvalid": "Username must be 3–24 characters: a–z, 0–9, or _.",
+    "nameInvalid": "Display name must be between 1 and 40 characters.",
+    "bioInvalid": "Bio must be 240 characters or fewer.",
+    "usernameTaken": "That username is already taken. Choose another.",
+    "loading": "Loading profile…",
+    "privacyNote": "Public profile fields: username, display name, and bio. Your email address is not shown to other users."
   }
 }
