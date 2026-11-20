@@ -62,8 +62,7 @@ export default function App() {
   const nav = (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark">✳</div>
-        <div><b>AFTERLIFE</b><small>YOUR SECOND EXISTENCE</small></div>
+        <button className="brand-home" type="button" onClick={() => {setActive("home");setMobileOpen(false);}} aria-label="AFTERLIFE — home"><BrandMark className="brand-mark"/><span><b>AFTERLIFE</b><small>YOUR SECOND EXISTENCE</small></span></button>
         <button className="close-mobile" onClick={() => setMobileOpen(false)} aria-label={t("close")}><X size={18}/></button>
       </div>
       <div className="system"><i/> {t("system")} <span>EU-01</span></div>
@@ -86,6 +85,7 @@ export default function App() {
       <header className="topbar">
         <div className="crumb"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label={t("menu")}><Menu size={19}/></button><button className="topbar-brand" type="button" onClick={()=>setActive("home")} aria-label="AFTERLIFE — home"><BrandMark/><span>AFTERLIFE</span></button><i>/</i><b>{t(`sections.${active}`)}</b></div>
         <div className="actions">
+          <button className="install-button" type="button" onClick={()=>setInstallHelp(v=>!v)} aria-expanded={installHelp}><Share2 size={15}/><span>На экран</span></button>
           <label className="search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("search")}/><kbd>⌘ K</kbd></label>
           <button className="bell" onClick={()=>setActive("notifications")} aria-label={t("sections.notifications")}><Bell size={18}/><i/></button>
           <div className="lang-wrap">
