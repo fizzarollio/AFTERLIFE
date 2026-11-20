@@ -25,6 +25,10 @@ npm run typecheck
 npm run build
 ```
 
+## Supabase Auth
+
+Раздел «Личность» использует passwordless-вход по одноразовой ссылке на email через Supabase Auth. Для локальной разработки скопируйте `.env.example` в `.env.local`. В Supabase Dashboard откройте Authentication → URL Configuration и добавьте `http://localhost:5173` в Redirect URLs. Для опубликованного приложения добавьте его точный HTTPS-домен. Никогда не помещайте secret/service_role key в клиентское приложение.
+
 ## Важно
 Это начальный frontend foundation, а не готовая социальная сеть. Реальные Auth, таблицы,
 RLS-политики, чаты, лента, миссии, инвентарь, админские операции и серверная игровая
