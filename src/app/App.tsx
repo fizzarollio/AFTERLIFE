@@ -22,6 +22,7 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const translate = (key: string) => String(t(key));
   useEffect(() => {
     document.documentElement.lang = i18n.language;
     document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
@@ -64,7 +65,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={t} onNavigate={setActive}/> : <Module t={t} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
