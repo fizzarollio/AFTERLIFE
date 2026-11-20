@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "AFTERLIFE",
+  "short_name": "AFTERLIFE",
+  "description": "Your second existence in a digital universe.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#08080c",
+  "theme_color": "#08080c",
+  "icons": [
+    { "src": "/afterlife-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
