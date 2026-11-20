@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive, Bell, Compass, Gamepad2, Globe2, Home, LockKeyhole,
   Menu, MessageCircle, Moon, Search, Settings, Shield, ShoppingBag,
-  Sparkles, UserRound, X, Zap, Plus, Trash2, Pencil, Save, ArrowLeft,
+  Sparkles, UserRound, X, Zap, Trash2, Pencil, Save, ArrowLeft,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase, supabaseConfigured } from "../lib/supabase";
