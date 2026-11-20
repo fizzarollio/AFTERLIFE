@@ -76,5 +76,19 @@
     "ja": "日本語",
     "ko": "한국어",
     "ar": "العربية"
+  },
+  "auth": {
+    "eyebrow": "ACCOUNT / SECURE ACCESS",
+    "configure": "Supabase client is not configured. Add the project URL and publishable key to your local .env.local file, then restart the dev server.",
+    "email": "Email address",
+    "sendLink": "Send sign-in link",
+    "sending": "Sending link…",
+    "working": "Working…",
+    "note": "New accounts are created automatically. A one-time sign-in link will be sent to this address.",
+    "sent": "If the address is valid, a sign-in link has been sent. Check your inbox.",
+    "failed": "Could not send the sign-in link. Please try again.",
+    "signedInAs": "SIGNED IN AS",
+    "signOut": "Sign out",
+    "signedOut": "You have been signed out."
   }
 }
