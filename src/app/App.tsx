@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive, Bell, Compass, Gamepad2, Globe2, Home, LockKeyhole,
   Menu, MessageCircle, Moon, Search, Settings, Shield, ShoppingBag,
-  Sparkles, UserRound, X, Zap, Trash2, Pencil, Save, ArrowLeft,
+  Sparkles, UserRound, X, Zap, Trash2, Pencil, Save, ArrowLeft, Share2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase, supabaseConfigured } from "../lib/supabase";
@@ -23,6 +23,7 @@ export default function App() {
   const [active, setActive] = useState<Section>("home");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [installHelp, setInstallHelp] = useState(false);
   const [search, setSearch] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -83,13 +84,13 @@ export default function App() {
     <div className={`sidebar-wrap ${mobileOpen ? "open" : ""}`}>{nav}</div>
     <main className="main">
       <header className="topbar">
-        <div className="crumb"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label={t("menu")}><Menu size={19}/></button><span>AFTERLIFE</span><i>/</i><b>{t(`sections.${active}`)}</b></div>
+        <div className="crumb"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label={t("menu")}><Menu size={19}/></button><button className="topbar-brand" type="button" onClick={()=>setActive("home")} aria-label="AFTERLIFE — home"><BrandMark/><span>AFTERLIFE</span></button><i>/</i><b>{t(`sections.${active}`)}</b></div>
         <div className="actions">
           <label className="search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("search")}/><kbd>⌘ K</kbd></label>
           <button className="bell" onClick={()=>setActive("notifications")} aria-label={t("sections.notifications")}><Bell size={18}/><i/></button>
           <div className="lang-wrap">
             <button className="lang-button" onClick={()=>setLangOpen(!langOpen)}><Globe2 size={15}/>{i18n.language.toUpperCase()}</button>
-            {langOpen && <div className="lang-menu">{languages.map(l=><button key={l} onClick={()=>{void i18n.changeLanguage(l);setLangOpen(false);}}>{t(`languages.${l}`)}</button>)}</div>}
+            {installHelp && <div className="install-help"><button className="install-help-close" onClick={()=>setInstallHelp(false)} aria-label={t("close")}><X size={14}/></button><b>Добавить AFTERLIFE на экран</b><p><strong>iPhone:</strong> открой сайт в Safari → нажми «Поделиться» → «На экран Домой» → «Добавить».</p><p><strong>Компьютер:</strong> используй значок установки в адресной строке браузера (если доступен).</p></div>}\n            {langOpen && <div className="lang-menu">{languages.map(l=><button key={l} onClick={()=>{void i18n.changeLanguage(l);setLangOpen(false);}}>{t(`languages.${l}`)}</button>)}</div>}
           </div>
         </div>
       </header>
@@ -115,7 +116,7 @@ function Dashboard({t,onNavigate,walletBalance,profile}:{t:(key:string)=>string;
     </section>
     <section className="hero">
       <div className="hero-copy"><div className="eyebrow"><i/> {t("universeLive")}</div><h2>{t("heroTitle")}<br/><em>{t("heroAccent")}</em></h2><p>{t("heroDescription")}</p><button className="outline" onClick={()=>onNavigate("world")}>{t("exploreWorld")} ↗</button></div>
-      <div className="planet"><div className="planet-ring ring1"/><div className="planet-ring ring2"/><div className="planet-ring ring3"/><div className="planet-core"><Sparkles size={32}/></div><span className="planet-star star1"/><span className="planet-star star2"/></div>
+      <button className="hero-emblem" type="button" onClick={()=>onNavigate("home")} aria-label="AFTERLIFE — главное меню"><BrandMark className="hero-logo-mark"/></button>
       <div className="coordinates">VOID SECTOR / 001<br/>SIGNAL: WAITING</div>
     </section>
     <div className="section-head"><div><div className="eyebrow">{t("yourUniverse")}</div><h2>{t("overview")}</h2></div><span className="status"><i/>{t("interfacePreview")}</span></div>
