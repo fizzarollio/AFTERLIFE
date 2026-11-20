@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive, Bell, Compass, Gamepad2, Globe2, Home, LockKeyhole,
@@ -6,6 +6,7 @@ import {
   Sparkles, UserRound, X, Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { supabase, supabaseConfigured } from "../lib/supabase";
 
 type Section = "home" | "void" | "identity" | "missions" | "market" | "world" | "signal" | "notifications" | "archive" | "settings";
 const items: { id: Section; icon: typeof Home }[] = [
@@ -22,6 +23,15 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase.auth.getSession().then(({ data }) => setUserEmail(data.session?.user.email ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const translate = (key: string) => String(t(key));
   useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -65,7 +75,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
@@ -107,4 +117,54 @@ function Dashboard({t,onNavigate}:{t:(key:string)=>string;onNavigate:(s:Section)
 function Module({t,section,onHome}:{t:(key:string)=>string;section:Section;onHome:()=>void}) {
   const Icon = items.find(x=>x.id===section)?.icon ?? Shield;
   return <section className="module"><div className="module-icon"><Icon size={26}/></div><div className="eyebrow">{t("module")}</div><h1>{t(`sections.${section}`)}</h1><p>{t(`descriptions.${section}`)}</p><div className="notice"><Shield size={16}/>{t("notImplemented")}</div><button className="secondary" onClick={onHome}>{t("backHome")} ↗</button></section>;
+}
+function Identity({t,userEmail}:{t:(key:string)=>string;userEmail:string|null}) {
+  const [email,setEmail] = useState("");
+  const [busy,setBusy] = useState(false);
+  const [message,setMessage] = useState("");
+
+  async function sendLink(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const {error} = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setMessage(t("auth.sent"));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t("auth.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function signOut() {
+    if (!supabase) return;
+    setBusy(true);
+    const {error} = await supabase.auth.signOut();
+    setMessage(error ? error.message : t("auth.signedOut"));
+    setBusy(false);
+  }
+
+  return <section className="module identity-module">
+    <div className="module-icon"><UserRound size={26}/></div>
+    <div className="eyebrow">{t("auth.eyebrow")}</div>
+    <h1>{t("sections.identity")}</h1>
+    <p>{t("descriptions.identity")}</p>
+    {!supabaseConfigured ? <div className="notice">{t("auth.configure")}</div> : userEmail ? <div className="auth-card">
+      <span className="eyebrow">{t("auth.signedInAs")}</span>
+      <strong className="auth-email">{userEmail}</strong>
+      <button className="secondary" type="button" onClick={signOut} disabled={busy}>{busy ? t("auth.working") : t("auth.signOut")}</button>
+    </div> : <form className="auth-card" onSubmit={sendLink}>
+      <label htmlFor="identity-email">{t("auth.email")}</label>
+      <input id="identity-email" type="email" autoComplete="email" required value={email} onChange={event=>setEmail(event.target.value)} placeholder="name@example.com"/>
+      <button className="primary" type="submit" disabled={busy}>{busy ? t("auth.sending") : t("auth.sendLink")}</button>
+      <p className="auth-note">{t("auth.note")}</p>
+    </form>}
+    {message && <div className="notice" role="status">{message}</div>}
+  </section>;
 }
