@@ -24,14 +24,29 @@ export default function App() {
   const [langOpen, setLangOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   useEffect(() => {
     if (!supabase) return;
-    void supabase.auth.getSession().then(({ data }) => setUserEmail(data.session?.user.email ?? null));
+    void supabase.auth.getSession().then(({ data }) => {
+      setUserEmail(data.session?.user.email ?? null);
+      setUserId(data.session?.user.id ?? null);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null);
+      setUserId(session?.user.id ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
+  useEffect(() => {
+    let active = true;
+    setWalletBalance(null);
+    if (!supabase || !userId) return () => { active = false; };
+    void supabase.from("wallets").select("balance").eq("user_id", userId).maybeSingle().then(({ data, error }) => {
+      if (active && !error) setWalletBalance(data?.balance ?? 0);
+    });
+    return () => { active = false; };
+  }, [userId]);
   const translate = (key: string) => String(t(key));
   useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -75,7 +90,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
@@ -84,7 +99,7 @@ export default function App() {
   </div>;
 }
 
-function Dashboard({t,onNavigate}:{t:(key:string)=>string;onNavigate:(s:Section)=>void}) {
+function Dashboard({t,onNavigate,walletBalance}:{t:(key:string)=>string;onNavigate:(s:Section)=>void;walletBalance:number|null}) {
   return <>
     <section className="welcome">
       <div className="eyebrow">{t("welcomeEyebrow")}</div>
@@ -101,7 +116,7 @@ function Dashboard({t,onNavigate}:{t:(key:string)=>string;onNavigate:(s:Section)
     <section className="stats">
       <article><div>{t("level")} <Zap size={15}/></div><strong>— <small>/ 100</small></strong><p>{t("afterSignup")}</p></article>
       <article><div>{t("experience")} <Sparkles size={15}/></div><strong>— <small>XP</small></strong><p>{t("progressStarts")}</p></article>
-      <article><div>{t("fragments")} <Globe2 size={15}/></div><strong>—</strong><p>{t("virtualCurrency")}</p></article>
+      <article><div>{t("fragments")} <Globe2 size={15}/></div><strong>{walletBalance === null ? "—" : walletBalance.toLocaleString()}</strong><p>{t("virtualCurrency")}</p></article>
     </section>
     <section className="lower">
       <article className="panel"><div className="panel-head"><div><div className="eyebrow">{t("community")}</div><h3>{t("voidWhispers")}</h3></div><button onClick={()=>onNavigate("void")}>{t("explore")} ↗</button></div>
