@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 import type { Database } from "../types/database.types";
+import { ArchiveModule, NotificationsModule, SettingsModule, SignalModule, WorldModule } from "./FunctionalModules";
 
 type Section = "home" | "void" | "identity" | "missions" | "market" | "world" | "signal" | "notifications" | "archive" | "settings";
 const items: { id: Section; icon: typeof Home }[] = [
@@ -98,7 +99,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance} profile={profile}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "missions" ? <Missions t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance} profile={profile}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "missions" ? <Missions t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "world" ? <WorldModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "signal" ? <SignalModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "notifications" ? <NotificationsModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "archive" ? <ArchiveModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "settings" ? <SettingsModule t={translate} userId={userId} onSignIn={()=>setActive("identity")} language={i18n.language} onLanguageChange={language=>{void i18n.changeLanguage(language);}}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
