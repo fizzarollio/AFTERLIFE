@@ -66,3 +66,47 @@ html[dir=rtl] .sidebar-wrap{inset:0 0 0 auto}.main{margin-inline-start:248px}htm
 .brand-home b{display:block;font-size:14px;letter-spacing:.2em}
 .brand-home small{display:block;color:#777584;font-size:8px;letter-spacing:.16em;margin-top:4px}
 @media(max-width:740px){.brand-home{flex:1}.close-mobile{flex:0 0 auto}}
+
+
+/* Mobile layout refinement: keep the hero text and brand mark in separate flow. */
+@media(max-width:740px){
+  .topbar{display:flex;gap:8px;padding-inline:12px}
+  .crumb{flex:1;min-width:0;gap:7px;overflow:hidden}
+  .crumb>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .actions{flex:0 0 auto;gap:7px}
+  .topbar-brand{flex:0 0 auto}
+  .hero{height:auto;min-height:0;display:flex;flex-direction:column;align-items:stretch;padding:0 0 15px}
+  .hero-copy{width:100%;max-width:none;padding:24px 20px 12px}
+  .hero h2{max-width:100%;font-size:clamp(27px,7vw,34px);overflow-wrap:anywhere}
+  .hero-copy p{max-width:100%;font-size:11px}
+  .hero-emblem{position:relative;top:auto;right:auto;transform:none;align-self:center;flex:0 0 auto;width:118px;height:118px;margin:0 auto 12px;opacity:1}
+  .hero-logo-mark{width:78px;height:78px}
+  .coordinates{position:static;align-self:flex-end;margin:0 15px 0 0;font-size:7px}
+  .section-head{align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .status{white-space:normal;text-align:right}
+  .install-help{position:fixed;top:72px;right:10px;left:10px;width:auto;max-width:420px;margin-left:auto}
+}
+@media(max-width:420px){
+  .content{padding:20px 12px}
+  .topbar{padding-inline:9px}
+  .crumb{gap:5px}
+  .crumb i{display:none}
+  .actions{gap:5px}
+  .install-button{min-width:34px;padding:0 7px}
+  .lang-button{padding:7px}
+  .welcome h1{font-size:clamp(25px,8vw,30px);overflow-wrap:anywhere}
+  .hero-copy{padding-inline:16px}
+  .hero-emblem{width:104px;height:104px}
+  .hero-logo-mark{width:70px;height:70px}
+  .stats{grid-template-columns:1fr}
+  .stats article{height:auto;min-height:82px}
+  .lower{gap:12px}
+  .panel{min-width:0;padding:14px}
+  footer{font-size:8px}
+}
+@media(max-width:350px){
+  .topbar-brand svg{width:22px;height:22px}
+  .install-button span{display:none}
+  .lang-button{font-size:8px}
+  .actions{gap:4px}
+}
