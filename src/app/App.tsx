@@ -27,6 +27,7 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [profile, setProfile] = useState<Database["public"]["Tables"]["profiles"]["Row"] | null>(null);
   useEffect(() => {
     if (!supabase) return;
     void supabase.auth.getSession().then(({ data }) => {
@@ -42,7 +43,11 @@ export default function App() {
   useEffect(() => {
     let active = true;
     setWalletBalance(null);
+    setProfile(null);
     if (!supabase || !userId) return () => { active = false; };
+    void supabase.from("profiles").select("*").eq("id", userId).maybeSingle().then(({ data, error }) => {
+      if (active && !error) setProfile(data);
+    });
     void supabase.from("wallets").select("balance").eq("user_id", userId).maybeSingle().then(({ data, error }) => {
       if (active && !error) setWalletBalance(data?.balance ?? 0);
     });
@@ -69,7 +74,7 @@ export default function App() {
       ))}</nav>
       <div className="sidebar-bottom">
         <div className="season"><div><Sparkles size={14}/>{t("season")}</div><strong>{t("seasonTitle")}</strong><p>{t("seasonDescription")}</p><div className="season-bar"/></div>
-        <div className="user"><div className="user-avatar"><UserRound size={17}/></div><div><b>{t("guest")}</b><small>{t("notSignedIn")}</small></div><LockKeyhole size={14}/></div>
+        <div className="user"><div className="user-avatar">{profile?.display_name?.slice(0,1).toUpperCase() || <UserRound size={17}/>}</div><div><b>{profile?.display_name || t("guest")}</b><small>{profile ? "@"+profile.username : t("notSignedIn")}</small></div>{profile ? <Sparkles size={14}/> : <LockKeyhole size={14}/>}</div>
       </div>
     </aside>
   );
@@ -91,7 +96,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
@@ -134,7 +139,7 @@ function Module({t,section,onHome}:{t:(key:string)=>string;section:Section;onHom
   const Icon = items.find(x=>x.id===section)?.icon ?? Shield;
   return <section className="module"><div className="module-icon"><Icon size={26}/></div><div className="eyebrow">{t("module")}</div><h1>{t(`sections.${section}`)}</h1><p>{t(`descriptions.${section}`)}</p><div className="notice"><Shield size={16}/>{t("notImplemented")}</div><button className="secondary" onClick={onHome}>{t("backHome")} ↗</button></section>;
 }
-function Identity({t,userEmail}:{t:(key:string)=>string;userEmail:string|null}) {
+function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>string;userEmail:string|null;userId:string|null;profile:Database["public"]["Tables"]["profiles"]["Row"]|null;onProfileSaved:(profile:Database["public"]["Tables"]["profiles"]["Row"])=>void}) {
   const [email,setEmail] = useState("");
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState("");
@@ -174,6 +179,7 @@ function Identity({t,userEmail}:{t:(key:string)=>string;userEmail:string|null}) 
     {!supabaseConfigured ? <div className="notice">{t("auth.configure")}</div> : userEmail ? <div className="auth-card">
       <span className="eyebrow">{t("auth.signedInAs")}</span>
       <strong className="auth-email">{userEmail}</strong>
+      {userId && <ProfileEditor t={t} userId={userId} profile={profile} onSaved={onProfileSaved}/>}
       <button className="secondary" type="button" onClick={signOut} disabled={busy}>{busy ? t("auth.working") : t("auth.signOut")}</button>
     </div> : <form className="auth-card" onSubmit={sendLink}>
       <label htmlFor="identity-email">{t("auth.email")}</label>
@@ -287,4 +293,56 @@ function VoidJournal({t,userId,onIdentity}:{t:(key:string)=>string;userId:string
     </div>}
     <p className="void-footnote"><LockKeyhole size={13}/>{t("void.privacyNote")}</p>
   </section>;
+}
+
+function ProfileEditor({t,userId,profile,onSaved}:{t:(key:string)=>string;userId:string;profile:Database["public"]["Tables"]["profiles"]["Row"]|null;onSaved:(profile:Database["public"]["Tables"]["profiles"]["Row"])=>void}) {
+  const [displayName,setDisplayName]=useState(profile?.display_name ?? "");
+  const [username,setUsername]=useState(profile?.username ?? "");
+  const [bio,setBio]=useState(profile?.bio ?? "");
+  const [busy,setBusy]=useState(false);
+  const [message,setMessage]=useState("");
+  const [error,setError]=useState("");
+  useEffect(()=>{
+    setDisplayName(profile?.display_name ?? "");
+    setUsername(profile?.username ?? "");
+    setBio(profile?.bio ?? "");
+  },[profile?.id,profile?.updated_at]);
+  async function save(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    const cleanUsername=username.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,24}$/.test(cleanUsername)) {setError(t("profile.usernameInvalid"));return;}
+    if (!displayName.trim() || displayName.trim().length>40) {setError(t("profile.nameInvalid"));return;}
+    if (bio.length>240) {setError(t("profile.bioInvalid"));return;}
+    setBusy(true);setError("");setMessage("");
+    const {data,error:saveError}=await supabase.from("profiles").update({
+      display_name:displayName.trim(),username:cleanUsername,bio:bio.trim(),updated_at:new Date().toISOString()
+    }).eq("id",userId).select("*").single();
+    if(saveError) {
+      setError(saveError.code==="23505"?t("profile.usernameTaken"):saveError.message);
+    } else if(data) {
+      onSaved(data);setMessage(t("profile.saved"));
+    }
+    setBusy(false);
+  }
+  return <form className="profile-editor" onSubmit={save}>
+    <div className="profile-preview">
+      <div className="profile-avatar">{displayName.trim().slice(0,1).toUpperCase() || <UserRound size={25}/>}</div>
+      <div><span className="eyebrow">{t("profile.preview")}</span><strong>{displayName || t("profile.defaultName")}</strong><small>@{username || "username"}</small></div>
+    </div>
+    <div className="profile-fields">
+      <label htmlFor="profile-display">{t("profile.displayName")}</label>
+      <input id="profile-display" value={displayName} maxLength={40} required onChange={e=>setDisplayName(e.target.value)} />
+      <label htmlFor="profile-username">{t("profile.username")}</label>
+      <input id="profile-username" value={username} maxLength={24} required autoCapitalize="none" autoCorrect="off" onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))}/>
+      <small className="profile-hint">{t("profile.usernameHint")}</small>
+      <label htmlFor="profile-bio">{t("profile.bio")}</label>
+      <textarea id="profile-bio" value={bio} maxLength={240} rows={4} onChange={e=>setBio(e.target.value)} placeholder={t("profile.bioPlaceholder")}/>
+      <div className="profile-form-bottom"><span className="char-count">{bio.length}/240</span><button className="primary" type="submit" disabled={busy || !profile}>{busy?t("profile.saving"):t("profile.save")}</button></div>
+    </div>
+    {error && <div className="notice" role="alert">{error}</div>}
+    {message && <div className="notice" role="status">{message}</div>}
+    {!profile && <p className="profile-hint">{t("profile.loading")}</p>}
+    <p className="profile-hint">{t("profile.privacyNote")}</p>
+  </form>;
 }
