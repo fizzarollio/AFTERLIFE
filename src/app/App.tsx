@@ -120,7 +120,7 @@ function Dashboard({t,onNavigate,walletBalance,profile}:{t:(key:string)=>string;
     </section>
     <div className="section-head"><div><div className="eyebrow">{t("yourUniverse")}</div><h2>{t("overview")}</h2></div><span className="status"><i/>{t("interfacePreview")}</span></div>
     <section className="stats">
-      <article><div>{t("level")} <Zap size={15}/></div><strong>{profile ? Math.floor(Math.sqrt(profile.experience/100))+1 : "—"} <small>/ 100</small></strong><p>{profile ? t("missions.levelProgress") : t("afterSignup")}</p></article>
+      <article><div>{t("level")} <Zap size={15}/></div><strong>{profile ? Math.min(100,Math.floor(Math.sqrt(profile.experience/100))+1) : "—"} <small>/ 100</small></strong><p>{profile ? t("missions.levelProgress") : t("afterSignup")}</p></article>
       <article><div>{t("experience")} <Sparkles size={15}/></div><strong>{profile ? profile.experience.toLocaleString() : "—"} <small>XP</small></strong><p>{profile ? t("missions.totalExperience") : t("progressStarts")}</p></article>
       <article><div>{t("fragments")} <Globe2 size={15}/></div><strong>{walletBalance === null ? "—" : walletBalance.toLocaleString()}</strong><p>{t("virtualCurrency")}</p></article>
     </section>
@@ -394,7 +394,7 @@ function Missions({t,userId,onIdentity}:{t:(key:string)=>string;userId:string|nu
  }
  if(!userId)return <section className="module"><div className="module-icon"><Gamepad2 size={26}/></div><div className="eyebrow">{t("missions.eyebrow")}</div><h1>{t("sections.missions")}</h1><p>{t("missions.signIn")}</p><button className="primary" onClick={onIdentity}>{t("missions.goSignIn")}</button></section>;
  const done=progress.filter(x=>x.status==="completed").length;
- const level=experience===null?1:Math.floor(Math.sqrt(experience/100))+1;
+ const level=experience===null?1:Math.min(100,Math.floor(Math.sqrt(experience/100))+1);
  const levelStart=(level-1)*(level-1)*100;
  const nextLevel=level*level*100;
  const pct=experience===null?0:Math.min(100,Math.round((experience-levelStart)/(nextLevel-levelStart)*100));
