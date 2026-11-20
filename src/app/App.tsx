@@ -106,6 +106,17 @@ export default function App() {
   </div>;
 }
 
+function BrandMark({className=""}:{className?:string}) {
+  return <svg className={className} viewBox="0 0 64 64" role="img" aria-label="AFTERLIFE">
+    <defs><linearGradient id="afterlifeGlow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f2b4ff"/><stop offset=".55" stopColor="#b45cff"/><stop offset="1" stopColor="#ff4fa3"/></linearGradient></defs>
+    <circle cx="32" cy="32" r="29" fill="#160d20" stroke="url(#afterlifeGlow)" strokeWidth="1.8"/>
+    <path d="M18 27c0-10 6-17 14-17s14 7 14 17l-2 15-7 8H27l-7-8z" fill="none" stroke="url(#afterlifeGlow)" strokeWidth="2.5" strokeLinejoin="round"/>
+    <path d="M22 29l8-4v12l-8-2zM42 29l-8-4v12l8-2z" fill="#c77aff"/>
+    <path d="M28 43h8m-4-6-4 6 4 5 4-5zM25 17l-5-5m19 5 5-5" fill="none" stroke="#f2b4ff" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M13 31l-5-3m43 3 5-3M18 47l-4 4m36-4 4 4" stroke="#ff80d0" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>;
+}
+
 function Dashboard({t,onNavigate,walletBalance,profile}:{t:(key:string)=>string;onNavigate:(s:Section)=>void;walletBalance:number|null;profile:Database["public"]["Tables"]["profiles"]["Row"]|null}) {
   return <>
     <section className="welcome">
