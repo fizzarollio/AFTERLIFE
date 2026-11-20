@@ -90,7 +90,8 @@ export default function App() {
           <button className="bell" onClick={()=>setActive("notifications")} aria-label={t("sections.notifications")}><Bell size={18}/><i/></button>
           <div className="lang-wrap">
             <button className="lang-button" onClick={()=>setLangOpen(!langOpen)}><Globe2 size={15}/>{i18n.language.toUpperCase()}</button>
-            {installHelp && <div className="install-help"><button className="install-help-close" onClick={()=>setInstallHelp(false)} aria-label={t("close")}><X size={14}/></button><b>Добавить AFTERLIFE на экран</b><p><strong>iPhone:</strong> открой сайт в Safari → нажми «Поделиться» → «На экран Домой» → «Добавить».</p><p><strong>Компьютер:</strong> используй значок установки в адресной строке браузера (если доступен).</p></div>}\n            {langOpen && <div className="lang-menu">{languages.map(l=><button key={l} onClick={()=>{void i18n.changeLanguage(l);setLangOpen(false);}}>{t(`languages.${l}`)}</button>)}</div>}
+            {installHelp && <div className="install-help"><button className="install-help-close" onClick={()=>setInstallHelp(false)} aria-label={t("close")}><X size={14}/></button><b>Добавить AFTERLIFE на экран</b><p><strong>iPhone:</strong> открой сайт в Safari → нажми «Поделиться» → «На экран Домой» → «Добавить».</p><p><strong>Компьютер:</strong> используй значок установки в адресной строке браузера (если доступен).</p></div>}
+            {langOpen && <div className="lang-menu">{languages.map(l=><button key={l} onClick={()=>{void i18n.changeLanguage(l);setLangOpen(false);}}>{t(`languages.${l}`)}</button>)}</div>}
           </div>
         </div>
       </header>
