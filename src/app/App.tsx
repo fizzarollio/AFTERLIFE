@@ -156,8 +156,10 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
   const [email,setEmail] = useState("");
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState("");
+  const [code,setCode] = useState("");
+  const [codeSent,setCodeSent] = useState(false);
 
-  async function sendLink(event:FormEvent<HTMLFormElement>) {
+  async function sendCode(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) return;
     setBusy(true);
@@ -165,12 +167,51 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
     try {
       const {error} = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+        options: { shouldCreateUser: true },
       });
       if (error) throw error;
-      setMessage(t("auth.sent"));
+      setCodeSent(true);
+      setMessage("Код отправлен на почту. Введи 6 цифр ниже.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("auth.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyCode(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const {error} = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code.trim(),
+        type: "email",
+      });
+      if (error) throw error;
+      setMessage("Почта подтверждена. Вход выполнен.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось подтвердить код.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendCode() {
+    if (!supabase) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const {error} = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: true },
+      });
+      if (error) throw error;
+      setMessage("Новый код отправлен.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось отправить код.");
     } finally {
       setBusy(false);
     }
@@ -194,12 +235,19 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
       <strong className="auth-email">{userEmail}</strong>
       {userId && <ProfileEditor t={t} userId={userId} profile={profile} onSaved={onProfileSaved}/>}
       <button className="secondary" type="button" onClick={signOut} disabled={busy}>{busy ? t("auth.working") : t("auth.signOut")}</button>
-    </div> : <form className="auth-card" onSubmit={sendLink}>
-      <label htmlFor="identity-email">{t("auth.email")}</label>
-      <input id="identity-email" type="email" autoComplete="email" required value={email} onChange={event=>setEmail(event.target.value)} placeholder="name@example.com"/>
-      <button className="primary" type="submit" disabled={busy}>{busy ? t("auth.sending") : t("auth.sendLink")}</button>
-      <p className="auth-note">{t("auth.note")}</p>
-    </form>}
+    </div> : <div className="auth-card">
+      <form onSubmit={codeSent ? verifyCode : sendCode}>
+        <label htmlFor="identity-email">{t("auth.email")}</label>
+        <input id="identity-email" type="email" autoComplete="email" required disabled={codeSent} value={email} onChange={event=>setEmail(event.target.value)} placeholder="name@example.com"/>
+        {codeSent && <>
+          <label htmlFor="identity-code">Код из письма</label>
+          <input id="identity-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={event=>setCode(event.target.value.replace(/\\D/g,"").slice(0,6))} placeholder="123456"/>
+        </>}
+        <button className="primary" type="submit" disabled={busy}>{busy ? "Подождите…" : codeSent ? "Подтвердить код" : "Отправить код"}</button>
+      </form>
+      {codeSent && <button className="secondary" type="button" onClick={resendCode} disabled={busy}>Отправить код ещё раз</button>}
+      <p className="auth-note">{codeSent ? "Проверь входящие и папку «Спам». Код состоит из 6 цифр." : "На почту придёт одноразовый код подтверждения из 6 цифр."}</p>
+    </div>}
     {message && <div className="notice" role="status">{message}</div>}
   </section>;
 }
