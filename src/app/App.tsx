@@ -159,6 +159,12 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
   const [message,setMessage] = useState("");
   const [code,setCode] = useState("");
   const [codeSent,setCodeSent] = useState(false);
+  const [resendCooldown,setResendCooldown] = useState(0);
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   async function sendCode(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,6 +178,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
       });
       if (error) throw error;
       setCodeSent(true);
+      setResendCooldown(60);
       setMessage("Код отправлен на почту. Введи 6 цифр ниже.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("auth.failed"));
@@ -201,7 +208,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
   }
 
   async function resendCode() {
-    if (!supabase) return;
+    if (!supabase || resendCooldown > 0) return;
     setBusy(true);
     setMessage("");
     try {
@@ -210,6 +217,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
         options: { shouldCreateUser: true },
       });
       if (error) throw error;
+      setResendCooldown(60);
       setMessage("Новый код отправлен.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не удалось отправить код.");
@@ -246,7 +254,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
         </>}
         <button className="primary" type="submit" disabled={busy}>{busy ? "Подождите…" : codeSent ? "Подтвердить код" : "Отправить код"}</button>
       </form>
-      {codeSent && <button className="secondary" type="button" onClick={resendCode} disabled={busy}>Отправить код ещё раз</button>}
+      {codeSent && <><button className="secondary" type="button" onClick={resendCode} disabled={busy || resendCooldown > 0}>{resendCooldown > 0 ? `Повторная отправка через ${resendCooldown} сек.` : "Отправить код ещё раз"}</button><button className="text-action" type="button" onClick={()=>{setCodeSent(false);setCode("");setMessage("");setResendCooldown(0);}}>Изменить адрес почты</button></>}
       <p className="auth-note">{codeSent ? "Проверь входящие и папку «Спам». Код состоит из 6 цифр." : "На почту придёт одноразовый код подтверждения из 6 цифр."}</p>
     </div>}
     {message && <div className="notice" role="status">{message}</div>}
