@@ -96,7 +96,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance} profile={profile}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "missions" ? <Missions t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
@@ -105,7 +105,7 @@ export default function App() {
   </div>;
 }
 
-function Dashboard({t,onNavigate,walletBalance}:{t:(key:string)=>string;onNavigate:(s:Section)=>void;walletBalance:number|null}) {
+function Dashboard({t,onNavigate,walletBalance,profile}:{t:(key:string)=>string;onNavigate:(s:Section)=>void;walletBalance:number|null;profile:Database["public"]["Tables"]["profiles"]["Row"]|null}) {
   return <>
     <section className="welcome">
       <div className="eyebrow">{t("welcomeEyebrow")}</div>
@@ -120,8 +120,8 @@ function Dashboard({t,onNavigate,walletBalance}:{t:(key:string)=>string;onNaviga
     </section>
     <div className="section-head"><div><div className="eyebrow">{t("yourUniverse")}</div><h2>{t("overview")}</h2></div><span className="status"><i/>{t("interfacePreview")}</span></div>
     <section className="stats">
-      <article><div>{t("level")} <Zap size={15}/></div><strong>— <small>/ 100</small></strong><p>{t("afterSignup")}</p></article>
-      <article><div>{t("experience")} <Sparkles size={15}/></div><strong>— <small>XP</small></strong><p>{t("progressStarts")}</p></article>
+      <article><div>{t("level")} <Zap size={15}/></div><strong>{profile ? Math.floor(Math.sqrt(profile.experience/100))+1 : "—"} <small>/ 100</small></strong><p>{profile ? t("missions.levelProgress") : t("afterSignup")}</p></article>
+      <article><div>{t("experience")} <Sparkles size={15}/></div><strong>{profile ? profile.experience.toLocaleString() : "—"} <small>XP</small></strong><p>{profile ? t("missions.totalExperience") : t("progressStarts")}</p></article>
       <article><div>{t("fragments")} <Globe2 size={15}/></div><strong>{walletBalance === null ? "—" : walletBalance.toLocaleString()}</strong><p>{t("virtualCurrency")}</p></article>
     </section>
     <section className="lower">
@@ -345,4 +345,71 @@ function ProfileEditor({t,userId,profile,onSaved}:{t:(key:string)=>string;userId
     {!profile && <p className="profile-hint">{t("profile.loading")}</p>}
     <p className="profile-hint">{t("profile.privacyNote")}</p>
   </form>;
+}
+
+type Mission = Database["public"]["Tables"]["missions"]["Row"];
+type UserMission = Database["public"]["Tables"]["user_missions"]["Row"];
+function Missions({t,userId,onIdentity}:{t:(key:string)=>string;userId:string|null;onIdentity:()=>void}) {
+ const [missions,setMissions]=useState<Mission[]>([]);
+ const [progress,setProgress]=useState<UserMission[]>([]);
+ const [balance,setBalance]=useState<number|null>(null);
+ const [experience,setExperience]=useState<number|null>(null);
+ const [busy,setBusy]=useState<string|null>(null);
+ const [error,setError]=useState("");
+ const [notice,setNotice]=useState("");
+ const [loading,setLoading]=useState(true);
+ async function load() {
+  if(!supabase||!userId){setLoading(false);return;}
+  setLoading(true);setError("");
+  const [m,p,w,profile]=await Promise.all([
+   supabase.from("missions").select("*").eq("is_active",true).order("created_at"),
+   supabase.from("user_missions").select("*").eq("user_id",userId),
+   supabase.from("wallets").select("balance").eq("user_id",userId).maybeSingle(),
+   supabase.from("profiles").select("experience").eq("id",userId).maybeSingle()
+  ]);
+  if(m.error||p.error||w.error||profile.error) setError(m.error?.message||p.error?.message||w.error?.message||profile.error?.message||t("missions.loadFailed"));
+  else {setMissions(m.data??[]);setProgress(p.data??[]);setBalance(w.data?.balance??0);setExperience(profile.data?.experience??0);}
+  setLoading(false);
+ }
+ useEffect(()=>{void load();},[userId]);
+ async function start(missionId:string) {
+  if(!supabase||!userId)return;
+  setBusy(missionId);setError("");setNotice("");
+  const {error:e}=await supabase.from("user_missions").insert({mission_id:missionId,user_id:userId,status:"started"});
+  if(e) setError(e.code==="23505"?t("missions.alreadyStarted"):e.message);
+  else {setNotice(t("missions.started"));await load();}
+  setBusy(null);
+ }
+ async function complete(item:UserMission) {
+  if(!supabase)return;
+  setBusy(item.id);setError("");setNotice("");
+  const {data,error:e}=await supabase.rpc("complete_mission",{p_user_mission_id:item.id});
+  if(e) setError(e.message);
+  else {
+   const result=data?.[0];
+   if(result){setNotice(t("missions.rewardReceived").replace("{reward}",String(result.reward)));setBalance(result.new_balance);setExperience(result.new_experience);}
+   await load();
+  }
+  setBusy(null);
+ }
+ if(!userId)return <section className="module"><div className="module-icon"><Gamepad2 size={26}/></div><div className="eyebrow">{t("missions.eyebrow")}</div><h1>{t("sections.missions")}</h1><p>{t("missions.signIn")}</p><button className="primary" onClick={onIdentity}>{t("missions.goSignIn")}</button></section>;
+ const done=progress.filter(x=>x.status==="completed").length;
+ const level=experience===null?1:Math.floor(Math.sqrt(experience/100))+1;
+ const levelStart=(level-1)*(level-1)*100;
+ const nextLevel=level*level*100;
+ const pct=experience===null?0:Math.min(100,Math.round((experience-levelStart)/(nextLevel-levelStart)*100));
+ return <section className="missions-page">
+  <div className="missions-heading"><div><div className="eyebrow">{t("missions.eyebrow")}</div><h1>{t("sections.missions")}</h1><p>{t("missions.intro")}</p></div><button className="text-action" onClick={()=>void load()} disabled={loading}>{t("missions.refresh")}</button></div>
+  <div className="mission-stats"><article><span>{t("missions.level")}</span><strong>{level}</strong><div className="xp-track"><i style={{width:pct+"%"}}/></div><small>{experience??0} / {nextLevel} XP</small></article><article><span>{t("missions.completed")}</span><strong>{done}</strong><small>{t("missions.completedCaption")}</small></article><article><span>{t("missions.fragments")}</span><strong>{balance??"—"}</strong><small>{t("missions.virtualOnly")}</small></article></div>
+  {error&&<div className="notice" role="alert">{error}</div>}{notice&&<div className="notice" role="status">{notice}</div>}
+  <div className="mission-list-head"><div><div className="eyebrow">{t("missions.available")}</div><h2>{t("missions.yourPath")}</h2></div><span className="mission-count">{missions.length}</span></div>
+  {loading?<div className="void-empty">{t("missions.loading")}</div>:missions.length===0?<div className="void-empty">{t("missions.empty")}</div>:<div className="mission-grid">{missions.map(m=>{
+   const item=progress.find(x=>x.mission_id===m.id);
+   const completed=item?.status==="completed";
+   return <article className="mission-card" key={m.id}><div className="mission-card-top"><span className="mission-symbol"><Sparkles size={18}/></span><span className="mission-reward">+{m.points} {t("missions.fragmentsShort")}</span></div><h3>{m.title}</h3><p>{m.description}</p>
+   {completed?<span className="mission-done"><Shield size={14}/>{t("missions.completedStatus")}</span>:item?<button className="primary" disabled={busy===item.id} onClick={()=>void complete(item)}>{busy===item.id?t("missions.processing"):t("missions.complete")}</button>:<button className="outline" disabled={busy===m.id} onClick={()=>void start(m.id)}>{busy===m.id?t("missions.processing"):t("missions.start")}</button>}
+   </article>;
+  })}</div>}
+  <p className="void-footnote"><LockKeyhole size={13}/>{t("missions.rewardSecurity")}</p>
+ </section>;
 }
