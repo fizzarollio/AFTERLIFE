@@ -283,6 +283,7 @@ export type Database = {
           bio: string
           created_at: string
           display_name: string
+          experience: number
           id: string
           updated_at: string
           username: string
@@ -292,6 +293,7 @@ export type Database = {
           bio?: string
           created_at?: string
           display_name?: string
+          experience?: number
           id: string
           updated_at?: string
           username: string
@@ -301,6 +303,7 @@ export type Database = {
           bio?: string
           created_at?: string
           display_name?: string
+          experience?: number
           id?: string
           updated_at?: string
           username?: string
@@ -603,7 +606,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_mission: {
+        Args: { p_user_mission_id: string }
+        Returns: {
+          new_balance: number
+          new_experience: number
+          reward: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
