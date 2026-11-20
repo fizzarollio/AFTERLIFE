@@ -60,3 +60,9 @@ html[dir=rtl] .sidebar-wrap{inset:0 0 0 auto}.main{margin-inline-start:248px}htm
   .actions{gap:6px}
 }
 @media(prefers-reduced-motion:reduce){.hero-emblem:before,.hero-emblem:after{animation:none}}
+
+.brand-home{display:flex;align-items:center;gap:10px;min-width:0;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.brand-home>span{display:block;min-width:0}
+.brand-home b{display:block;font-size:14px;letter-spacing:.2em}
+.brand-home small{display:block;color:#777584;font-size:8px;letter-spacing:.16em;margin-top:4px}
+@media(max-width:740px){.brand-home{flex:1}.close-mobile{flex:0 0 auto}}
