@@ -3,10 +3,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive, Bell, Compass, Gamepad2, Globe2, Home, LockKeyhole,
   Menu, MessageCircle, Moon, Search, Settings, Shield, ShoppingBag,
-  Sparkles, UserRound, X, Zap,
+  Sparkles, UserRound, X, Zap, Plus, Trash2, Pencil, Save, ArrowLeft,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase, supabaseConfigured } from "../lib/supabase";
+import type { Database } from "../types/database.types";
 
 type Section = "home" | "void" | "identity" | "missions" | "market" | "world" | "signal" | "notifications" | "archive" | "settings";
 const items: { id: Section; icon: typeof Home }[] = [
@@ -90,7 +91,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
@@ -181,5 +182,109 @@ function Identity({t,userEmail}:{t:(key:string)=>string;userEmail:string|null}) 
       <p className="auth-note">{t("auth.note")}</p>
     </form>}
     {message && <div className="notice" role="status">{message}</div>}
+  </section>;
+}
+
+type VoidEntry = Database["public"]["Tables"]["void_entries"]["Row"];
+
+function VoidJournal({t,userId,onIdentity}:{t:(key:string)=>string;userId:string|null;onIdentity:()=>void}) {
+  const [entries,setEntries] = useState<VoidEntry[]>([]);
+  const [loading,setLoading] = useState(false);
+  const [saving,setSaving] = useState(false);
+  const [editingId,setEditingId] = useState<string|null>(null);
+  const [title,setTitle] = useState("");
+  const [body,setBody] = useState("");
+  const [mood,setMood] = useState("");
+  const [error,setError] = useState("");
+  const [notice,setNotice] = useState("");
+
+  async function loadEntries() {
+    if (!supabase || !userId) return;
+    setLoading(true);
+    setError("");
+    const {data,error:queryError} = await supabase.from("void_entries").select("*").order("updated_at",{ascending:false});
+    if (queryError) setError(queryError.message);
+    else setEntries(data ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => { void loadEntries(); }, [userId]);
+
+  function resetForm() {
+    setEditingId(null); setTitle(""); setBody(""); setMood("");
+  }
+
+  function startEdit(entry:VoidEntry) {
+    setEditingId(entry.id); setTitle(entry.title); setBody(entry.body); setMood(entry.mood ?? "");
+    setNotice(""); setError("");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  async function saveEntry(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !userId) return;
+    if (!body.trim()) { setError(t("void.bodyRequired")); return; }
+    setSaving(true); setError(""); setNotice("");
+    const values = {title:title.trim().slice(0,100),body:body.trim().slice(0,5000),mood:mood || null};
+    const result = editingId
+      ? await supabase.from("void_entries").update(values).eq("id",editingId).select("*").single()
+      : await supabase.from("void_entries").insert({...values,user_id:userId}).select("*").single();
+    if (result.error) setError(result.error.message);
+    else {
+      setNotice(t(editingId ? "void.updated" : "void.saved"));
+      resetForm();
+      await loadEntries();
+    }
+    setSaving(false);
+  }
+
+  async function deleteEntry(id:string) {
+    if (!supabase) return;
+    if (!window.confirm(t("void.deleteConfirm"))) return;
+    setError(""); setNotice("");
+    const {error:deleteError} = await supabase.from("void_entries").delete().eq("id",id);
+    if (deleteError) setError(deleteError.message);
+    else { setEntries(current=>current.filter(entry=>entry.id!==id)); if (editingId===id) resetForm(); setNotice(t("void.deleted")); }
+  }
+
+  if (!userId) return <section className="module void-module">
+    <div className="module-icon"><Moon size={26}/></div><div className="eyebrow">{t("void.eyebrow")}</div>
+    <h1>{t("sections.void")}</h1><p>{t("void.privateIntro")}</p>
+    <div className="notice"><LockKeyhole size={16}/>{t("void.signInRequired")}</div>
+    <button className="primary" onClick={onIdentity}>{t("void.goToIdentity")} ↗</button>
+  </section>;
+
+  return <section className="void-module">
+    <div className="void-heading">
+      <div><div className="eyebrow">{t("void.eyebrow")}</div><h1>{t("sections.void")}</h1><p>{t("void.privateIntro")}</p></div>
+      <div className="private-label"><LockKeyhole size={14}/>{t("void.privateLabel")}</div>
+    </div>
+    <form className="void-editor" onSubmit={saveEntry}>
+      <div className="void-editor-head"><div><span className="eyebrow">{editingId ? t("void.editing") : t("void.newEntry")}</span><h2>{t("void.writeTitle")}</h2></div>
+        {editingId && <button className="text-action" type="button" onClick={resetForm}><ArrowLeft size={14}/>{t("void.cancel")}</button>}
+      </div>
+      <label htmlFor="void-title">{t("void.titleLabel")}</label>
+      <input id="void-title" value={title} maxLength={100} onChange={e=>setTitle(e.target.value)} placeholder={t("void.titlePlaceholder")}/>
+      <label htmlFor="void-body">{t("void.bodyLabel")}</label>
+      <textarea id="void-body" value={body} maxLength={5000} required rows={7} onChange={e=>setBody(e.target.value)} placeholder={t("void.bodyPlaceholder")}/>
+      <div className="void-editor-bottom">
+        <label className="mood-select">{t("void.moodLabel")}<select value={mood} onChange={e=>setMood(e.target.value)}><option value="">{t("void.moodNone")}</option><option value="calm">{t("void.moods.calm")}</option><option value="hopeful">{t("void.moods.hopeful")}</option><option value="tired">{t("void.moods.tired")}</option><option value="uncertain">{t("void.moods.uncertain")}</option><option value="grateful">{t("void.moods.grateful")}</option></select></label>
+        <span className="char-count">{body.length}/5000</span>
+        <button className="primary" type="submit" disabled={saving || !body.trim()}><Save size={15}/>{saving ? t("void.saving") : t(editingId ? "void.update" : "void.save")}</button>
+      </div>
+    </form>
+    {error && <div className="notice void-message" role="alert">{error}</div>}
+    {notice && <div className="notice void-message" role="status">{notice}</div>}
+    <div className="void-list-head"><div><div className="eyebrow">{t("void.archiveEyebrow")}</div><h2>{t("void.yourEntries")} <span>{entries.length}</span></h2></div><button className="text-action" onClick={()=>void loadEntries()} disabled={loading}>{t("void.refresh")}</button></div>
+    {loading ? <div className="void-empty">{t("void.loading")}</div> : entries.length===0 ? <div className="void-empty"><Moon size={22}/><b>{t("void.emptyTitle")}</b><p>{t("void.emptyDescription")}</p></div> : <div className="void-entry-list">
+      {entries.map(entry=><article className="void-entry" key={entry.id}>
+        <div className="void-entry-top"><div><span className="void-date">{new Date(entry.updated_at).toLocaleString()}</span><h3>{entry.title || t("void.untitled")}</h3></div>
+          <div className="void-entry-actions"><button className="icon-action" aria-label={t("void.edit")} onClick={()=>startEdit(entry)}><Pencil size={15}/></button><button className="icon-action danger" aria-label={t("void.delete")} onClick={()=>void deleteEntry(entry.id)}><Trash2 size={15}/></button></div>
+        </div>
+        {entry.mood && <span className="void-mood">{t("void.moods."+entry.mood)}</span>}
+        <p className="void-entry-body">{entry.body}</p>
+      </article>)}
+    </div>}
+    <p className="void-footnote"><LockKeyhole size={13}/>{t("void.privacyNote")}</p>
   </section>;
 }
