@@ -250,7 +250,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
         <input id="identity-email" type="email" autoComplete="email" required disabled={codeSent} value={email} onChange={event=>setEmail(event.target.value)} placeholder="name@example.com"/>
         {codeSent && <>
           <label htmlFor="identity-code">Код из письма</label>
-          <input id="identity-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={event=>setCode(event.target.value.replace(/\\D/g,"").slice(0,6))} placeholder="123456"/>
+          <input id="identity-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,"").slice(0,6))} placeholder="123456"/>
         </>}
         <button className="primary" type="submit" disabled={busy}>{busy ? "Подождите…" : codeSent ? "Подтвердить код" : "Отправить код"}</button>
       </form>
