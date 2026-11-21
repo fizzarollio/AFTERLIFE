@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 import type { Database } from "../types/database.types";
+import { ArchiveModule, NotificationsModule, SettingsModule, SignalModule, WorldModule } from "./FunctionalModules";
 
 type Section = "home" | "void" | "identity" | "missions" | "market" | "world" | "signal" | "notifications" | "archive" | "settings";
 const items: { id: Section; icon: typeof Home }[] = [
@@ -98,7 +99,7 @@ export default function App() {
       <div className="content">
         <AnimatePresence mode="wait">
           <motion.div key={active} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.2}}>
-            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance} profile={profile}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "missions" ? <Missions t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
+            {active === "home" ? <Dashboard t={translate} onNavigate={setActive} walletBalance={walletBalance} profile={profile}/> : active === "identity" ? <Identity t={translate} userEmail={userEmail} userId={userId} profile={profile} onProfileSaved={setProfile}/> : active === "void" ? <VoidJournal t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "missions" ? <Missions t={translate} userId={userId} onIdentity={()=>setActive("identity")}/> : active === "world" ? <WorldModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "signal" ? <SignalModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "notifications" ? <NotificationsModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "archive" ? <ArchiveModule t={translate} userId={userId} onSignIn={()=>setActive("identity")}/> : active === "settings" ? <SettingsModule t={translate} userId={userId} onSignIn={()=>setActive("identity")} language={i18n.language} onLanguageChange={language=>{void i18n.changeLanguage(language);}}/> : <Module t={translate} section={active} onHome={()=>setActive("home")}/>}
           </motion.div>
         </AnimatePresence>
         <footer><span>AFTERLIFE © 2026</span><span>{t("footer")}</span><span className="mono">FOUNDATION BUILD 0.1.0</span></footer>
@@ -158,6 +159,12 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
   const [message,setMessage] = useState("");
   const [code,setCode] = useState("");
   const [codeSent,setCodeSent] = useState(false);
+  const [resendCooldown,setResendCooldown] = useState(0);
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   async function sendCode(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -171,6 +178,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
       });
       if (error) throw error;
       setCodeSent(true);
+      setResendCooldown(60);
       setMessage("Код отправлен на почту. Введи 6 цифр ниже.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("auth.failed"));
@@ -200,7 +208,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
   }
 
   async function resendCode() {
-    if (!supabase) return;
+    if (!supabase || resendCooldown > 0) return;
     setBusy(true);
     setMessage("");
     try {
@@ -209,6 +217,7 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
         options: { shouldCreateUser: true },
       });
       if (error) throw error;
+      setResendCooldown(60);
       setMessage("Новый код отправлен.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не удалось отправить код.");
@@ -241,11 +250,11 @@ function Identity({t,userEmail,userId,profile,onProfileSaved}:{t:(key:string)=>s
         <input id="identity-email" type="email" autoComplete="email" required disabled={codeSent} value={email} onChange={event=>setEmail(event.target.value)} placeholder="name@example.com"/>
         {codeSent && <>
           <label htmlFor="identity-code">Код из письма</label>
-          <input id="identity-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={event=>setCode(event.target.value.replace(/\\D/g,"").slice(0,6))} placeholder="123456"/>
+          <input id="identity-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,"").slice(0,6))} placeholder="123456"/>
         </>}
         <button className="primary" type="submit" disabled={busy}>{busy ? "Подождите…" : codeSent ? "Подтвердить код" : "Отправить код"}</button>
       </form>
-      {codeSent && <button className="secondary" type="button" onClick={resendCode} disabled={busy}>Отправить код ещё раз</button>}
+      {codeSent && <><button className="secondary" type="button" onClick={resendCode} disabled={busy || resendCooldown > 0}>{resendCooldown > 0 ? `Повторная отправка через ${resendCooldown} сек.` : "Отправить код ещё раз"}</button><button className="text-action" type="button" onClick={()=>{setCodeSent(false);setCode("");setMessage("");setResendCooldown(0);}}>Изменить адрес почты</button></>}
       <p className="auth-note">{codeSent ? "Проверь входящие и папку «Спам». Код состоит из 6 цифр." : "На почту придёт одноразовый код подтверждения из 6 цифр."}</p>
     </div>}
     {message && <div className="notice" role="status">{message}</div>}
