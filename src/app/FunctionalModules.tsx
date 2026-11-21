@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Bell, Compass, Globe2, LockKeyhole, MessageCircle, Plus, Send, Shield, Users } from "lucide-react";
+import { Bell, Compass, Globe2, LockKeyhole, MessageCircle, Send } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../types/database.types";
 
